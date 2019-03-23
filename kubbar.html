@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+<title>Þríris kubbar</title>
+<style type="text/css">
+    canvas { background: blue; }
+</style>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+
+attribute  vec4 vPosition;
+attribute  vec2 vTexCoord;
+
+varying vec2 fTexCoord;
+
+uniform mat4 projection;
+uniform mat4 modelview;
+
+void main()
+{
+    fTexCoord = vTexCoord;
+    gl_Position = projection * modelview * vPosition;
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+precision mediump float;
+
+varying vec2 fTexCoord;
+uniform sampler2D texture;
+
+void main()
+{
+    gl_FragColor = texture2D( texture, fTexCoord );
+}
+</script>
+
+<script type="text/javascript" src="../webgl-utils.js"></script>
+<script type="text/javascript" src="../initShaders.js"></script>
+<script type="text/javascript" src="../MV.js"></script>
+<script type="text/javascript" src="kubbar.js"></script>
+</head>
+
+<body>
+<canvas id="gl-canvas" width="512" height="700">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+
+<img id = "RedImage" src = "RedTex.jpg" hidden></img>
+<img id = "BlueImage" src = "BlueTex.jpg" hidden></img>
+<img id = "WhiteImage" src = "WhiteTex.jpg" hidden></img>
+
+</body>
+</html>
