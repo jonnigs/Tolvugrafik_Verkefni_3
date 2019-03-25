@@ -14,6 +14,7 @@ var program;
 var texRed;
 var texBlue;
 var texWhite;
+var texYellow;
 
 var movement = false;
 var spinX = 0;
@@ -21,21 +22,16 @@ var spinY = 0;
 var origX;
 var origY;
 
-var zDist = 10.0;
+var scaleY = 0.25;
+var redOff = 2.75;
+var blueOff = 2.62;
 
-var flipX = 0;
-var flipY = 0;
-var flipZ = 0;
-var north = 0;
-var west = 0;
+var zDist = 7.0;
 
 var counter = 0; // Klukka fyrir hreyfingu niður
-var drop = 0;
 
 var proLoc;
 var mvLoc;
-
-var rand = Math.random();
 
 var vertices = [
   // V - kubbur
@@ -167,6 +163,14 @@ var vertices = [
   vec4( -1.0, -1.0 , -1.0, 0.2),
   vec4(  1.0, -1.0 , -1.0, 0.2),
   vec4(  1.0, -1.0 ,  1.0, 0.2),
+
+  // skuggi
+  vec4(  1.0, -1.0 ,  1.0, 1.0),
+  vec4( -1.0, -1.0 ,  1.0, 1.0),
+  vec4( -1.0, -1.0 , -1.0, 1.0),
+  vec4( -1.0, -1.0 , -1.0, 1.0),
+  vec4(  1.0, -1.0 , -1.0, 1.0),
+  vec4(  1.0, -1.0 ,  1.0, 1.0)
 ];
 
 var texCoords = [
@@ -298,17 +302,26 @@ var texCoords = [
     vec2( 6.0, 20.0 ),
     vec2( 6.0, 20.0 ),
     vec2( 0.0, 20.0 ),
-    vec2( 0.0, 0.0 )
+    vec2( 0.0, 0.0 ),
+
+    // Skuggi
+    vec2( 0.0, 0.0 ),
+    vec2( 1.0, 0.0 ),
+    vec2( 1.0, 1.0 ),
+    vec2( 1.0, 1.0 ),
+    vec2( 0.0, 1.0 ),
+    vec2( 0.0, 0.0 ),
 ];
 
 var locations = []; // 0 þýðir að viðeigandi reitur sé tómur, 1 þýðir að það sé kominn kubbur í hann
 for(i=0; i < 20 * 36; i++){
   locations.push(0);
 }
+for(i=0; i < 36; i++){
+  locations.push(1); // Falskur botn
+}
 var currentPos = [0, 0, 0]; // Hvaða reiti í locations erum við að hreyfa
-var gamlirkubbar = [0, 3, 1, 0, 0, 1, 0,
-                    1, 4, 1, 2, 0, -1, 0,
-                    0, 5, 1, 2, 3, 0, 1];
+var gamlirkubbar = [];
 var nyrkubbur = [0, 0, 0, 0, 0, 0, 0]; // Týpa, d , fX, fY, fZ, north, west
 
 window.onload = function init() {
@@ -370,12 +383,24 @@ window.onload = function init() {
 
     gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
 
-    // Lesa inn og skilgreina mynstur fyrir botninn
+    // Lesa inn og skilgreina mynstur fyrir botninn (hvítur)
     var whiteImage = document.getElementById("WhiteImage");
     texWhite = gl.createTexture();
     gl.bindTexture( gl.TEXTURE_2D, texWhite );
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, whiteImage );
+    gl.generateMipmap( gl.TEXTURE_2D );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
+
+    gl.uniform1i(gl.getUniformLocation(program, "texture"), 0);
+
+    // Lesa inn og skilgreina mynstur fyrir skuggann (gulur)
+    var yellowImage = document.getElementById("YellowImage");
+    texYellow = gl.createTexture();
+    gl.bindTexture( gl.TEXTURE_2D, texYellow );
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, yellowImage );
     gl.generateMipmap( gl.TEXTURE_2D );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
@@ -413,35 +438,45 @@ window.onload = function init() {
     // Event listener for keyboard
      window.addEventListener("keydown", function(e){
          switch( e.keyCode ) {
-            case 65:	// A
-                flipX += 1;
+            case 65:	// A - snúa jákvætt X
+                nyrkubbur[2] += 1;
                 break;
-            case 90:	// Z
-                flipX -= 1;
+            case 90:	// Z - snúa neikvætt X
+                nyrkubbur[2] -= 1;
                 break;
-            case 83:	// S
-                flipY += 1;
+            case 83:	// S - snúa jákvætt Y
+                nyrkubbur[3] += 1;
                 break;
-            case 88:	// X
-                flipY -= 1;
+            case 88:	// X - snúa neikvætt Y
+                nyrkubbur[3] -= 1;
                 break;
-            case 68:	// D
-                flipZ += 1;
+            case 68:	// D - snúa jákvætt Z
+                nyrkubbur[4] += 1;
                 break;
-            case 67:	// C
-                flipZ -= 1;
+            case 67:	// C - snúa neikvætt Z
+                nyrkubbur[4] -= 1;
                 break;
             case 38:	// Upp
-                north += 1;
+                if ( nyrkubbur[5] <= 0.4){
+                  changeCurrentPos('n');
+                }
                 break;
             case 40:	// Niður
-                north -= 1;
+                if ( nyrkubbur[5] >= -0.6 && nyrkubbur[0]== 0){
+                  changeCurrentPos('s');
+                } else if (nyrkubbur[5] >= -0.7 && nyrkubbur[0] == 1) {
+                  changeCurrentPos('s');
+                }
                 break;
             case 37:	// Vinstri
-                west += 1;
+                if( nyrkubbur[6] >= -0.7){
+                  changeCurrentPos('w');
+                }
                 break;
             case 39:	// Hægri
-                west -= 1;
+                if (nyrkubbur[6] < 0.6) {
+                  changeCurrentPos('e');
+                }
                 break;
          }
      }  );
@@ -454,7 +489,7 @@ window.onload = function init() {
              zDist -= 0.2;
          }
      }  );
-
+    newCube();
     render();
 
 }
@@ -462,57 +497,74 @@ window.onload = function init() {
 // Býr til nýjan kubb og sér um að halda utan um kubba sem búið er að spila
 function newCube() {
   var annarhvor = Math.random();
+  //annarhvor = 1;
   if (annarhvor <= 0.5){
-    // Stilla allt fyrir rauðan v kubb
-    if(locations[14] == 0 && locations[50] == 0 && locations[51] == 0) {
-      changeCurrentPos('d');
-
-      nyrkubbur[0] = 0; // v kubbur
-      nyrkubbur[1] = 0; // Hversu mikið er hann búinn að fara niður
-      nyrkubbur[2] = 0; // Hversu oft snúið um X
-      nyrkubbur[3] = 0; // Hversu oft snúið um Y
-      nyrkubbur[4] = 0; // Hversu oft snúið um Z
-      nyrkubbur[5] = 0; // Hversu mikið hreyfður í N/S
-      nyrkubbur[6] = 0; // Hversu mikið hreyfður í E/W
-    } else {
-      endGame();
-    };
-
+    nyrkubbur[0] = 0; // v kubbur (rauður)
   } else {
-    // Stilla allt fyrir bláan l kubb
-
-    nyrkubbur[0] = 1; // l kubbur
-    nyrkubbur[1] = 0; // Hversu mikið er hann búinn að fara niður
-    nyrkubbur[2] = 0; // Hversu oft snúið um X
-    nyrkubbur[3] = 0; // Hversu oft snúið um Y
-    nyrkubbur[4] = 0; // Hversu oft snúið um Z
-    nyrkubbur[5] = 0; // Hversu mikið hreyfður í N/S
-    nyrkubbur[6] = 0; // Hversu mikið hreyfður í E/W
+    nyrkubbur[0] = 1; // l kubbur (blár)
   };
+  nyrkubbur[1] = 0; // Hversu mikið er hann búinn að fara niður
+  nyrkubbur[2] = 0; // Hversu oft snúið um X
+  nyrkubbur[3] = 0; // Hversu oft snúið um Y
+  nyrkubbur[4] = 0; // Hversu oft snúið um Z
+  nyrkubbur[5] = 0; // Hversu mikið hreyfður í N/S
+  nyrkubbur[6] = 0; // Hversu mikið hreyfður í E/W
+  changeCurrentPos('start');  // Setur currentPos og athugar árekstra í locations
 };
 
-// Tekur við n, e, s, w, fX, fY, fZ, d, end
+// Tekur við d, n, e, s, w, fX, fY, fZ, end og start
 function changeCurrentPos(x){
-  if (X == 'd') { // Down
-    currentPos[0] += 36;
-    currentPos[1] += 36;
-    currentPos[2] += 36;
+  if (x == 'd') { // Down
+    if ( locations[ currentPos[0] + 36] == 1 || locations[ currentPos[1] + 36] == 1 || locations[ currentPos[2] + 36] == 1) {
+      for(i=0;i<7;i++) {
+        gamlirkubbar.push(nyrkubbur[i]);
+      }
+      locations[currentPos[0]] = 1;
+      locations[currentPos[1]] = 1;
+      locations[currentPos[2]] = 1;
+      newCube();
+    } else {
+      currentPos[0] += 36;
+      currentPos[1] += 36;
+      currentPos[2] += 36;
+      nyrkubbur[1] += 0.25;
+    }
   } else if ( x == 'n') { // Norður/upp ör
-    currentPos[0] -= 6;
-    currentPos[1] -= 6;
-    currentPos[2] -= 6;
+    if ( locations[currentPos[0] - 6] == 1 || locations[currentPos[1] - 6] == 1 || locations[currentPos[2] - 6 ] == 1) {
+      console.log('engin breyting');
+    } else {
+      currentPos[0] -= 6;
+      currentPos[1] -= 6;
+      currentPos[2] -= 6;
+      nyrkubbur[5] += 2/6;
+    }
   } else if ( x == 'e') { // Austur/hægri ör
-    currentPos[0] += 1;
-    currentPos[1] += 1;
-    currentPos[2] += 1;
+    if ( locations[currentPos[0] + 1] == 1 || locations[currentPos[1] + 1] == 1 || locations[currentPos[2] + 1 ] == 1) {
+      console.log('engin breyting');
+    } else {
+      currentPos[0] += 1;
+      currentPos[1] += 1;
+      currentPos[2] += 1;
+      nyrkubbur[6] += 2/6;
+    }
   } else if ( x == 'w') { // Vestur/vinstri ör
-    currentPos[0] -= 1;
-    currentPos[1] -= 1;
-    currentPos[2] -= 1;
+    if ( locations[currentPos[0] - 1] == 1 || locations[currentPos[1] - 1] == 1 || locations[currentPos[2] - 1 ] == 1) {
+      console.log('engin breyting');
+    } else {
+      currentPos[0] -= 1;
+      currentPos[1] -= 1;
+      currentPos[2] -= 1;
+      nyrkubbur[6] -= 2/6;
+    }
   } else if ( x == 's') { // Suður/niður ör
-    currentPos[0] += 6;
-    currentPos[1] += 6;
-    currentPos[2] += 6;
+    if ( locations[currentPos[0] + 6] == 1 || locations[currentPos[1] + 6] == 1 || locations[currentPos[2] + 6 ] == 1) {
+      console.log('engin breyting');
+    } else {
+      currentPos[0] += 6;
+      currentPos[1] += 6;
+      currentPos[2] += 6;
+      nyrkubbur[5] -= 2/6;
+    }
   } else if ( x == 'fX') { // Snúa um X
     currentPos[0] += x;
     currentPos[1] += x;   // Eftir að kóða
@@ -525,8 +577,32 @@ function changeCurrentPos(x){
     currentPos[0] += x;
     currentPos[1] += x;   // Eftir að kóða
     currentPos[2] += x;
-  } else if (x == 'end') {
-
+  } else if ( x == 'end') {
+    for(i=0; i < 20 * 36; i++){
+      locations[i] = 0;
+    }
+    currentPos[0] = 0;
+    currentPos[0] = 0;
+    currentPos[0] = 0;
+    endGame();
+  } else if ( x == 'start') { // Start staða
+    if (nyrkubbur[0] == 0) { // Rauður
+      if (locations[16] == 1 || locations[52] == 1 || locations[53] == 1){ // Tékka hvort eitthvað sé fyrir
+        endGame();
+      } else {
+        currentPos[0] = 21;
+        currentPos[1] = 51;
+        currentPos[2] = 57;
+      }
+    } else if (nyrkubbur[0] == 1){                 // Blár
+      if (locations[21] == 1 || locations[57] == 1 || locations[93] == 1){
+        endGame();
+      } else {
+        currentPos[0] = 15;
+        currentPos[1] = 51;
+        currentPos[2] = 87;
+      }
+    }
   }
 };
 
@@ -535,23 +611,30 @@ function endGame() {
   console.log('Leik lokið');
 }
 
+// Athugar hvort að hægt sé að hæð sé full og hægt að eyða
 function checkIfFullFloor(){
 
 }
 
+// Teiknar alla kubba sem búið er að spila með
 function renderOldCubes(mv){
   var fjoldiKubba = gamlirkubbar.length/7;
   for (i = 0; i<fjoldiKubba; i++) {
-    mv1 = mult( mv, translate( 0.166 + gamlirkubbar[i*7+5], 6.0 - gamlirkubbar[i*7+1], 0.166 + gamlirkubbar[i*7+6] ) );
-    mv1 = mult(mv1, scalem( 0.33, 0.33, 0.33 ) );
-    mv1 = mult(mv1, rotateX( gamlirkubbar[i*7+2] * 90 ) );
-    mv1 = mult(mv1, rotateY( gamlirkubbar[i*7+3] * 90 ) );
-    mv1 = mult(mv1, rotateZ( gamlirkubbar[i*7+4] * 90 ) );
     if(gamlirkubbar[i*7] == 0) {
+      mv1 = mult( mv, translate( gamlirkubbar[i*7+5], redOff - gamlirkubbar[i*7+1], 0.166 + gamlirkubbar[i*7+6] ) );
+      mv1 = mult(mv1, scalem( 0.33, scaleY, 0.33 ) );
+      mv1 = mult(mv1, rotateX( gamlirkubbar[i*7+2] * 90 ) );
+      mv1 = mult(mv1, rotateY( gamlirkubbar[i*7+3] * 90 ) );
+      mv1 = mult(mv1, rotateZ( gamlirkubbar[i*7+4] * 90 ) );
       gl.bindTexture( gl.TEXTURE_2D, texRed );
       gl.uniformMatrix4fv(mvLoc, false, flatten(mv1));
       gl.drawArrays( gl.TRIANGLES, 0, numVertices );
     } else if(gamlirkubbar[i*7] == 1) {
+      mv1 = mult( mv, translate( 0.166 + gamlirkubbar[i*7+5], blueOff - gamlirkubbar[i*7+1], 0.166 + gamlirkubbar[i*7+6] ) );
+      mv1 = mult(mv1, scalem( 0.33, scaleY, 0.33 ) );
+      mv1 = mult(mv1, rotateX( gamlirkubbar[i*7+2] * 90 ) );
+      mv1 = mult(mv1, rotateY( gamlirkubbar[i*7+3] * 90 ) );
+      mv1 = mult(mv1, rotateZ( gamlirkubbar[i*7+4] * 90 ) );
       gl.bindTexture( gl.TEXTURE_2D, texBlue );
       gl.uniformMatrix4fv(mvLoc, false, flatten(mv1));
       gl.drawArrays( gl.TRIANGLES, 60, 36 );
@@ -559,6 +642,7 @@ function renderOldCubes(mv){
   }
 }
 
+// Teiknar leikvöllinn
 function renderSuroundings(mv){
   // Botn
   mv1 = mult( mv, translate( 0.0, -1.0, 0.0 ) );
@@ -568,8 +652,8 @@ function renderSuroundings(mv){
 
   // Veggir
   mv1 = mult( mv, rotateX( 90 ) );
-  mv1 = mult( mv1, scalem( 0.2, 1.0, 0.8 ) );
-  mv1 = mult( mv1, translate( 0.0, 4.0, -2.5 ) );
+  mv1 = mult( mv1, scalem( 0.2, 1.0, 0.5 ) );
+  mv1 = mult( mv1, translate( 0.0, 4.0, -1.0 ) );
   gl.bindTexture( gl.TEXTURE_2D, texWhite );
   gl.uniformMatrix4fv(mvLoc, false, flatten(mv1));
   gl.drawArrays( gl.TRIANGLES, 102, 6 );
@@ -591,13 +675,66 @@ function renderSuroundings(mv){
   */
   mv1 = mult( mv, rotateX( -90 ) );
   mv1 = mult( mv1, rotateZ( 90 ) );
-  mv1 = mult( mv1, scalem( 0.2, 1.0, 0.8 ) );
-  mv1 = mult( mv1, translate( 0.0, 4.0, 2.5 ) );
+  mv1 = mult( mv1, scalem( 0.2, 1.0, 0.5 ) );
+  mv1 = mult( mv1, translate( 0.0, 4.0, 1.0 ) );
   gl.bindTexture( gl.TEXTURE_2D, texWhite );
   gl.uniformMatrix4fv(mvLoc, false, flatten(mv1));
   gl.drawArrays( gl.TRIANGLES, 102, 6 );
 }
 
+// Reiknar og teiknar gulann skugga á veggi til að gefa til kynna hvar núverandi kubbur er
+function renderShadow(mv){
+  var skuggi1 = 2*4*nyrkubbur[1];
+  var skuggi2 = nyrkubbur[5] * 3 * 2;
+  var skuggi3 = nyrkubbur[6] * 3 * 2;
+
+  // Vesturveggur
+  mv1 = mult( mv, rotateX( 90 ) );
+  mv1 = mult( mv1, scalem( 0.166, 0.2, 0.125 ) );
+  if (nyrkubbur[0] == 0) {
+    mv1 = mult( mv1, translate( -1.0 + skuggi2, -3.99, -23.0 + skuggi1 ) );
+    yellowDraw(mv1);
+    mv1 = mult( mv1, translate( 0.0, 0.0, 2.0 ) );
+    yellowDraw(mv1);
+    mv1 = mult( mv1, translate( 2.0, 0.0, 0.0 ) );
+    yellowDraw(mv1);
+  } else if (nyrkubbur[0] == 1) {
+    mv1 = mult( mv1, translate( 1.0 + skuggi2, -3.99, -23.0 + skuggi1 ) );
+    yellowDraw(mv1);
+    mv1 = mult( mv1, translate( 0.0, 0.0, 2.0 ) );
+    yellowDraw(mv1);
+    mv1 = mult( mv1, translate( 0.0, 0.0, 2.0 ) );
+    yellowDraw(mv1);
+  }
+
+  // Norðurveggur
+  mv1 = mult( mv, rotateX( -90 ) );
+  mv1 = mult( mv1, rotateZ( 90 ) );
+  mv1 = mult( mv1, scalem( 0.166, 0.2, 0.125 ) );
+  if (nyrkubbur[0] == 0) {
+    mv1 = mult( mv1, translate( -1.0 - skuggi3, -3.99, 21.0 - skuggi1 ) );
+    gl.bindTexture( gl.TEXTURE_2D, texYellow );
+    yellowDraw(mv1);
+    mv1 = mult( mv1, translate( 0.0, 0.0, 2.0 ) );
+    yellowDraw(mv1);
+  } else if (nyrkubbur[0] == 1) {
+    mv1 = mult( mv1, translate( -1.0 - skuggi3, -3.99, 19.0 - skuggi1 ) );
+    yellowDraw(mv1);
+    mv1 = mult( mv1, translate( 0.0, 0.0, 2.0 ) );
+    yellowDraw(mv1);
+    mv1 = mult( mv1, translate( 0.0, 0.0, 2.0 ) );
+    yellowDraw(mv1);
+  }
+}
+
+// Keyrir línur sem koma of oft óbreyttar fyrir í kóða
+function yellowDraw(mv1){
+  gl.bindTexture( gl.TEXTURE_2D, texYellow );
+  gl.uniformMatrix4fv(mvLoc, false, flatten(mv1));
+  gl.drawArrays( gl.TRIANGLES, 108, 6 );
+}
+
+// Heldur utan um allar teikningar
 function render(){
     counter += 1;
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -605,34 +742,40 @@ function render(){
     // staðsetja áhorfanda og meðhöndla músarhreyfingu
     var mv = lookAt( vec3( 0.0, 0.0, zDist), vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0) );
     mv = mult( mv, rotateX( spinX ) );
-    mv = mult( mv, rotateY( spinY ) );
-    mv = mult( mv, translate( 0.0, -2.0, 0.0) );
-    mv = mult( mv, rotateY(45));
+    mv = mult( mv, rotateY( 45 + spinY ) );
+    mv = mult( mv, translate( 0.0, 0.0, 0.0) );
 
+    // Teikna leikvöllinn
+    renderSuroundings(mv);
     // Teikna alla eldri kubba
     renderOldCubes(mv);
+    // Færa kubb niður um einn á visst margra ramma fresti
+    if(counter % 120 == 0 ){
+      changeCurrentPos('d'); // Droppa niður um einn
+    }
+    // Teikna skuggann á veggjunum sem fylgir
+    renderShadow(mv);
 
     // Teikna núverandi kubb
-    mv1 = mult( mv, translate( 0.166 + north, 6.0 - drop, 0.166 + west ) );
-    mv1 = mult(mv1, scalem( 0.33, 0.33, 0.33 ) );
-    mv1 = mult(mv1, rotateX( flipX * 90 ) );
-    mv1 = mult(mv1, rotateY( flipY * 90 ) );
-    mv1 = mult(mv1, rotateZ( flipZ * 90 ) );
-    if(counter % 120 == 0 ){
-      drop += 0.2;
-    }
-    if(rand <= 0.5) {
+    if(nyrkubbur[0] == 0) {
+      mv1 = mult( mv, translate( nyrkubbur[5], redOff - nyrkubbur[1], 0.166 + nyrkubbur[6] ) );
+      mv1 = mult(mv1, scalem( 0.33, scaleY, 0.33 ) );
+      mv1 = mult(mv1, rotateX( nyrkubbur[2] * 90 ) );
+      mv1 = mult(mv1, rotateY( nyrkubbur[3] * 90 ) );
+      mv1 = mult(mv1, rotateZ( nyrkubbur[4] * 90 ) );
       gl.bindTexture( gl.TEXTURE_2D, texRed );
       gl.uniformMatrix4fv(mvLoc, false, flatten(mv1));
       gl.drawArrays( gl.TRIANGLES, 0, numVertices );
     } else {
+      mv1 = mult( mv, translate( 0.166 + nyrkubbur[5], blueOff - nyrkubbur[1], 0.166 + nyrkubbur[6] ) );
+      mv1 = mult(mv1, scalem( 0.33, scaleY, 0.33 ) );
+      mv1 = mult(mv1, rotateX( nyrkubbur[2] * 90 ) );
+      mv1 = mult(mv1, rotateY( nyrkubbur[3] * 90 ) );
+      mv1 = mult(mv1, rotateZ( nyrkubbur[4] * 90 ) );
       gl.bindTexture( gl.TEXTURE_2D, texBlue );
       gl.uniformMatrix4fv(mvLoc, false, flatten(mv1));
       gl.drawArrays( gl.TRIANGLES, 60, 36 );
     }
-
-    // Teikna leikvöllinn
-    renderSuroundings(mv);
 
     requestAnimFrame(render);
 }
