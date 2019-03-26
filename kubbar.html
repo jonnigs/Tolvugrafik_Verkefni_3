@@ -5,7 +5,8 @@
 <title>Þríris kubbar</title>
 <style type="text/css">
     canvas { background: blue; }
-</style>
+</style><link href="https://fonts.googleapis.com/css?family=Droid+Serif:400,400i|Raleway:400,700" rel="stylesheet">
+<link rel="stylesheet" href="kubbar.css">
 
 <script id="vertex-shader" type="x-shader/x-vertex">
 
@@ -44,9 +45,27 @@ void main()
 </head>
 
 <body>
-<canvas id="gl-canvas" width="512" height="700">
-Oops ... your browser doesn't support the HTML5 canvas element
-</canvas>
+  <div class="leidbeiningadiv">
+    <h2> Leiðbeiningar </h2>
+    <p>Notið örvar til að hreyfa fallandi kubba til í plani</p>
+    <p>Notið a/z, s/x og d/c til að snúa kubbum um x, y og z ása</p>
+    <p>Notið bilstöng (space) til að láta kubba falla hraðar</p>
+    <p>Ýtið á ENTER til að sleppa kubbum alla leið niður</p>
+  </div>
+  <canvas id="gl-canvas" width="512" height="700">
+    Oops ... your browser doesn't support the HTML5 canvas element
+  </canvas>
+  <div class="stigadiv">
+    <h2 class="stig">Stig</h2>
+    <br>
+    <br>
+    <div class="stigagluggi">
+      <h2>0</h2>
+    </div>
+    <br>
+    <br>
+    <h2 class="leiklokid"></h2>
+  </div>
 
 <img id = "RedImage" src = "RedTex.jpg" hidden></img>
 <img id = "BlueImage" src = "BlueTex.jpg" hidden></img>

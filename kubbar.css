@@ -1,0 +1,63 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+
+body {
+  font-family: 'Raleway', sans-serif;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.2) 100%);
+  display: flex;
+  margin: 0.5em 0;
+}
+
+.leidbeiningadiv {
+  border: 5px solid black;
+  width: 30%;
+  border-radius: 20px;
+  padding: 2em;
+  margin: 2em;
+  background-color: #404acc;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+h2 {
+  text-align: center;
+}
+
+.stigadiv {
+  border: 5px solid black;
+  width: 30%;
+  border-radius: 20px;
+  padding: 2em;
+  margin: 2em;
+  background-color: #ed1c24;
+}
+
+.stigagluggi {
+  border: 2px solid black;
+  border-radius: 10px;
+  background-color: white;
+  text-align: right;
+  padding: 1em 2em;
+}
+
+.stigagluggi h2 {
+  text-align: right;
+  padding: 1em 2em;
+}
+
+.stig {
+  margin: 1.5em;
+}

@@ -25,6 +25,8 @@ var origY;
 var scaleY = 0.25;
 var redOff = 2.75;
 var blueOff = 2.62;
+var stopDrop = 0;
+var stig = 0;
 
 var zDist = 7.0;
 
@@ -478,6 +480,17 @@ window.onload = function init() {
                   changeCurrentPos('e');
                 }
                 break;
+            case 32:	// Space (Fast drop)
+                changeCurrentPos('d');
+                break;
+            case 13: // Entar (Hard drop)
+                stopDrop = 0;
+                console.log(stopDrop);
+            	  while(stopDrop == 0){
+                  changeCurrentPos('d');
+                }
+                changePoints('enter');
+                break;
          }
      }  );
 
@@ -523,6 +536,8 @@ function changeCurrentPos(x){
       locations[currentPos[1]] = 1;
       locations[currentPos[2]] = 1;
       newCube();
+      stopDrop = 1;
+      changePoints('k');
     } else {
       currentPos[0] += 36;
       currentPos[1] += 36;
@@ -609,6 +624,30 @@ function changeCurrentPos(x){
 // Lætur vita að leik sé lokið
 function endGame() {
   console.log('Leik lokið');
+}
+
+// Klassískt fall sem tæmir element
+function empty(el) {
+  while (el.firstChild) {
+    el.removeChild(el.firstChild);
+  }
+}
+
+// Breytir stigum í stigagluga
+function changePoints(x){
+  var stigagluggi = document.querySelector('.stigagluggi');
+  empty(stigagluggi);
+  if (x == 'k') { // Kubbur lendir sjálfur - 150 stig
+    stig += 150;
+  } else if (x == 'enter') { // Kubbur lendir eftir hard drop - 500 stig
+    stig += 350 // Hin 150 koma frá lendingunni
+  } else if (x == 'h') { // Heilli hæð eytt - 5.000 stig
+    stig += 4850;
+  }
+
+  var uppfaerdstig = document.createElement('h2'); // Div fyrir hvern flokk
+  uppfaerdstig.textContent = stig;
+  stigagluggi.appendChild(uppfaerdstig);
 }
 
 // Athugar hvort að hægt sé að hæð sé full og hægt að eyða
@@ -750,7 +789,7 @@ function render(){
     // Teikna alla eldri kubba
     renderOldCubes(mv);
     // Færa kubb niður um einn á visst margra ramma fresti
-    if(counter % 120 == 0 ){
+    if(counter % 20 == 0 ){
       changeCurrentPos('d'); // Droppa niður um einn
     }
     // Teikna skuggann á veggjunum sem fylgir
