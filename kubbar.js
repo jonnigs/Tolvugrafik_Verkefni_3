@@ -7,17 +7,16 @@
 var canvas;
 var gl;
 
-var numVertices  = 60;
-
 var program;
 
+// Mynstur sem eru notuð í leiknum
 var texRed;
 var texBlue;
 var texWhite;
 var texYellow;
 
-var speed = 1; // Minnkar og hraðar á leiknum eftir því sem að fleiri hæðum er eytt
-var floorsDeleted = 0;
+var speed = 1; // Hraðar á leiknum eftir því sem að fleiri hæðum er eytt
+var floorsDeleted = 0; // Sýnir notenda hversu mörgum hæðum hefur veri eytt
 
 var movement = false;
 var spinX = 0;
@@ -34,11 +33,17 @@ var waitResponse = false; // Stöðvar leikinn ef að leik líkur og bíður eft
 
 var zDist = 7.0;
 
-var counter = 0; // Klukka fyrir hreyfingu niður
+var counter = 0; // Klukka fyrir hreyfingu niður á við
 
 var proLoc;
 var mvLoc;
 
+/* Vertices:  Punktar sem við notum til að teikna eftir, inniheldur Rauða
+              kubbinn, bláa kubbinn, spjald sem er notað í leikvöll og skugga
+              og svo teningur til að teikna gamla kubba eftir.
+   TexCoords: Heldur utan um hvernig á að setja viðeigandi mynstur á hnitin úr
+              vertices
+*/
 var vertices = [
   // V - kubbur
   vec4(  0.0,  1.0 , 0.5, 1.0), //Framhlið
@@ -221,7 +226,6 @@ var vertices = [
   vec4(  -1.0, -1.0,  1.0, 1.0 ),
   vec4(  -1.0, -1.0, -1.0, 1.0 ),
 ];
-
 var texCoords = [
     // V - kubbur
     vec2( 0.0, 0.0 ), // Framhlið
@@ -405,8 +409,13 @@ var texCoords = [
     vec2( 0.0, 0.0 ),
 ];
 
-var locations = []; // 0 þýðir að viðeigandi reitur sé tómur, 1 þýðir að það sé kominn kubbur í hann
-var types = [];     // 0 þýðir rauður og 1 þýðir blár
+/* Locations: 20*6*6 staka vigur sem heldur utan um hvort að það sé gamall
+              kubbur í svæði sem verið er að reyna að fara í. Einnig eru
+              gamlir kubbar teinaðir eftir locations.
+   Types:     Hvort er Rauður eða blár kubbur í samsvarandi locations svæði.
+*/
+var locations = [];
+var types = [];
 for(i=0; i < 20 * 36; i++){
   locations.push(0);
   types.push(2);
@@ -414,8 +423,16 @@ for(i=0; i < 20 * 36; i++){
 for(i=0; i < 36; i++){
   locations.push(1); // Falskur botn
 }
-var currentPos = [0, 0, 0]; // Hvaða reiti í locations erum við að hreyfa
-var nyrkubbur = [0, 0, 0, 0, 0]; // Týpa, d , fX, fY, fZ, north, west, pos
+
+// Heldur utan um hvar núverandi kubbur er staðsettur
+var currentPos = [0, 0, 0];
+
+/* Nýrkubbur: Týpa  (Rauður/Blár),
+              d     (Hversu margar hæðir hefur hann farið niður),
+              north (Upp/Niður hreyfing í plani),
+              west  (Vinstri/Hægri hreyfing í plani),
+              pos   (Stelling sem kubburinn er í) */
+var nyrkubbur = [0, 0, 0, 0, 0];
 
 window.onload = function init() {
 
@@ -527,269 +544,190 @@ window.onload = function init() {
          switch( e.keyCode ) {
             case 65:	// A - snúa jákvætt X
               if (nyrkubbur[0] == 0){
-                if (nyrkubbur[4] == 1) {
-                  nyrkubbur[4] = 10;
+                if (nyrkubbur[4] == 1 && nyrkubbur[3] >= -0.7) {
                   changeCurrentPos('10');
-                } else if (nyrkubbur[4] == 2) {
-                  nyrkubbur[4] = 4;
+                } else if (nyrkubbur[4] == 2 && nyrkubbur[3] >= -0.7) {
                   changeCurrentPos('4');
-                } else if (nyrkubbur[4] == 3) {
-                  nyrkubbur[4] = 9;
+                } else if (nyrkubbur[4] == 3 && nyrkubbur[3] >= -0.7) {
                   changeCurrentPos('9');
                 } else if (nyrkubbur[4] == 4) {
-                  nyrkubbur[4] = 8;
                   changeCurrentPos('8');
-                } else if (nyrkubbur[4] == 5) {
-                  nyrkubbur[4] = 11;
+                } else if (nyrkubbur[4] == 5 && nyrkubbur[3] <= 0.4) {
                   changeCurrentPos('11');
                 } else if (nyrkubbur[4] == 6) {
-                  nyrkubbur[4] = 2;
                   changeCurrentPos('2');
-                } else if (nyrkubbur[4] == 7) {
-                  nyrkubbur[4] = 12;
+                } else if (nyrkubbur[4] == 7 && nyrkubbur[3] <= 0.4) {
                   changeCurrentPos('12');
-                } else if (nyrkubbur[4] == 8) {
-                  nyrkubbur[4] = 6;
+                } else if (nyrkubbur[4] == 8 && nyrkubbur[3] <= 0.4) {
                   changeCurrentPos('6');
                 } else if (nyrkubbur[4] == 9) {
-                  nyrkubbur[4] = 7;
                   changeCurrentPos('7');
                 } else if (nyrkubbur[4] == 10) {
-                  nyrkubbur[4] = 5;
                   changeCurrentPos('5');
                 } else if (nyrkubbur[4] == 11) {
-                  nyrkubbur[4] = 1;
                   changeCurrentPos('1');
                 } else if (nyrkubbur[4] == 12) {
-                  nyrkubbur[4] = 3;
                   changeCurrentPos('3');
                 }
               }
               else if (nyrkubbur[0] == 1) {
                 if ( nyrkubbur[4] == 1 && nyrkubbur[3] >= -0.7 && nyrkubbur[3] <= 0.4) {
-                  nyrkubbur[4] = 2;
                   changeCurrentPos('2');
                 } else if (nyrkubbur[4] == 2) {
-                  nyrkubbur[4] = 1;
                   changeCurrentPos('1');
                 } else if (nyrkubbur[4] == 3) {
-                  nyrkubbur[4] = 3;
                   changeCurrentPos('3');
                 }
               }
                 break;
             case 90:	// Z - snúa neikvætt X
               if (nyrkubbur[0] == 0){
-                if (nyrkubbur[4] == 1) {
-                  nyrkubbur[4] = 11;
+                if (nyrkubbur[4] == 1 && nyrkubbur[3] <= 0.4) {
                   changeCurrentPos('11');
                 } else if (nyrkubbur[4] == 2) {
-                  nyrkubbur[4] = 6;
                   changeCurrentPos('6');
-                } else if (nyrkubbur[4] == 3) {
-                  nyrkubbur[4] = 12;
+                } else if (nyrkubbur[4] == 3 && nyrkubbur[3] <= 0.4) {
                   changeCurrentPos('12');
-                } else if (nyrkubbur[4] == 4) {
-                  nyrkubbur[4] = 8;
-                  changeCurrentPos('8');
-                } else if (nyrkubbur[4] == 5) {
-                  nyrkubbur[4] = 10;
+                } else if (nyrkubbur[4] == 4 && nyrkubbur[3] <= 0.4) {
+                  changeCurrentPos('2');
+                } else if (nyrkubbur[4] == 5 && nyrkubbur[3] >= -0.7) {
                   changeCurrentPos('10');
-                } else if (nyrkubbur[4] == 6) {
-                  nyrkubbur[4] = 8;
+                } else if (nyrkubbur[4] == 6 && nyrkubbur[3] >= -0.7) {
                   changeCurrentPos('8');
-                } else if (nyrkubbur[4] == 7) {
-                  nyrkubbur[4] = 9;
+                } else if (nyrkubbur[4] == 7 && nyrkubbur[3] >= -0.7) {
                   changeCurrentPos('9');
                 } else if (nyrkubbur[4] == 8) {
-                  nyrkubbur[4] = 4;
                   changeCurrentPos('4');
                 } else if (nyrkubbur[4] == 9) {
-                  nyrkubbur[4] = 3;
                   changeCurrentPos('3');
                 } else if (nyrkubbur[4] == 10) {
-                  nyrkubbur[4] = 1;
                   changeCurrentPos('1');
                 } else if (nyrkubbur[4] == 11) {
-                  nyrkubbur[4] = 5;
                   changeCurrentPos('5');
                 } else if (nyrkubbur[4] == 12) {
-                  nyrkubbur[4] = 7;
                   changeCurrentPos('7');
                 }
               }
-
               else if (nyrkubbur[0] == 1) {
                 if ( nyrkubbur[4] == 1 && nyrkubbur[3] >= -0.7 && nyrkubbur[3] <= 0.4) {
-                  nyrkubbur[4] = 2;
                   changeCurrentPos('2');
                 } else if (nyrkubbur[4] == 2) {
-                  nyrkubbur[4] = 1;
                   changeCurrentPos('1');
                 } else if (nyrkubbur[4] == 3) {
-                  nyrkubbur[4] = 3;
                   changeCurrentPos('3');
                 }
               }
                 break;
             case 83:	// S - snúa jákvætt Y
               if (nyrkubbur[0] == 0) {
-                if (nyrkubbur[4] == 1) {
-                  nyrkubbur[4] = 4;
+                if (nyrkubbur[4] == 1 && nyrkubbur[3] >= -0.7) {
                   changeCurrentPos('4');
-                } else if (nyrkubbur[4] == 2) {
-                  nyrkubbur[4] = 1;
+                } else if (nyrkubbur[4] == 2 && nyrkubbur[2] <= 0.7) {
                   changeCurrentPos('1');
-                } else if (nyrkubbur[4] == 3) {
-                  nyrkubbur[4] = 2;
+                } else if (nyrkubbur[4] == 3 && nyrkubbur[3] <= 0.4) {
                   changeCurrentPos('2');
-                } else if (nyrkubbur[4] == 4) {
-                  nyrkubbur[4] = 3;
+                } else if (nyrkubbur[4] == 4 && nyrkubbur[2] >= -0.4) {
                   changeCurrentPos('3');
-                } else if (nyrkubbur[4] == 5) {
-                  nyrkubbur[4] = 8;
+                } else if (nyrkubbur[4] == 5 && nyrkubbur[3] >= -0.7) {
                   changeCurrentPos('8');
-                } else if (nyrkubbur[4] == 6) {
-                  nyrkubbur[4] = 5;
+                } else if (nyrkubbur[4] == 6 && nyrkubbur[2] <= 0.7) {
                   changeCurrentPos('5');
-                } else if (nyrkubbur[4] == 7) {
-                  nyrkubbur[4] = 6;
+                } else if (nyrkubbur[4] == 7 && nyrkubbur[3] <= 0.4) {
                   changeCurrentPos('6');
-                } else if (nyrkubbur[4] == 8) {
-                  nyrkubbur[4] = 7;
+                } else if (nyrkubbur[4] == 8 && nyrkubbur[2] >= -0.4) {
                   changeCurrentPos('7');
-                } else if (nyrkubbur[4] == 9) {
-                  nyrkubbur[4] = 12;
+                } else if (nyrkubbur[4] == 9 && nyrkubbur[3] <= 0.4) {
                   changeCurrentPos('12');
-                } else if (nyrkubbur[4] == 10) {
-                  nyrkubbur[4] = 9;
+                } else if (nyrkubbur[4] == 10 && nyrkubbur[2] >= -0.4) {
                   changeCurrentPos('9');
-                } else if (nyrkubbur[4] == 11) {
-                  nyrkubbur[4] = 10;
+                } else if (nyrkubbur[4] == 11 && nyrkubbur[3] >= -0.7) {
                   changeCurrentPos('10');
-                } else if (nyrkubbur[4] == 12) {
-                  nyrkubbur[4] = 11;
+                } else if (nyrkubbur[4] == 12 && nyrkubbur[2] <= 0.7) {
                   changeCurrentPos('11');
                 }
               }
-
               else if (nyrkubbur[0] == 1) {
                   if (nyrkubbur[4] == 1) {
-                    nyrkubbur[4] = 1;
                     changeCurrentPos('1');
                   } else if (nyrkubbur[4] == 2 && nyrkubbur[2] <= 0.4 && nyrkubbur[2] >= -0.7) {
-                    nyrkubbur[4] = 3;
                     changeCurrentPos('3');
                   } else if (nyrkubbur[4] == 3 && nyrkubbur[3] >= -0.7 && nyrkubbur[3] <= 0.4) {
-                    nyrkubbur[4] = 2;
                     changeCurrentPos('2');
                   }
               }
                 break;
             case 88:	// X - snúa neikvætt Y
             if (nyrkubbur[0] == 0) {
-              if (nyrkubbur[4] == 1) {
-                nyrkubbur[4] = 2;
+              if (nyrkubbur[4] == 1 && nyrkubbur[3] <= 0.4) {
                 changeCurrentPos('2');
-              } else if (nyrkubbur[4] == 2) {
-                nyrkubbur[4] = 3;
+              } else if (nyrkubbur[4] == 2 && nyrkubbur[2] >= -0.4) {
                 changeCurrentPos('3');
-              } else if (nyrkubbur[4] == 3) {
-                nyrkubbur[4] = 4;
+              } else if (nyrkubbur[4] == 3 && nyrkubbur[3] >= -0.7) {
                 changeCurrentPos('4');
-              } else if (nyrkubbur[4] == 4) {
-                nyrkubbur[4] = 1;
+              } else if (nyrkubbur[4] == 4 && nyrkubbur[2] <= 0.7) {
                 changeCurrentPos('1');
-              } else if (nyrkubbur[4] == 5) {
-                nyrkubbur[4] = 6;
+              } else if (nyrkubbur[4] == 5 && nyrkubbur[3] <= 0.4) {
                 changeCurrentPos('6');
-              } else if (nyrkubbur[4] == 6) {
-                nyrkubbur[4] = 7;
+              } else if (nyrkubbur[4] == 6 && nyrkubbur[2] >= -0.4) {
                 changeCurrentPos('7');
-              } else if (nyrkubbur[4] == 7) {
-                nyrkubbur[4] = 8;
+              } else if (nyrkubbur[4] == 7 && nyrkubbur[3] >= -0.7) {
                 changeCurrentPos('8');
-              } else if (nyrkubbur[4] == 8) {
-                nyrkubbur[4] = 5;
+              } else if (nyrkubbur[4] == 8 && nyrkubbur[2] <= 0.7) {
                 changeCurrentPos('5');
-              } else if (nyrkubbur[4] == 9) {
-                nyrkubbur[4] = 10;
+              } else if (nyrkubbur[4] == 9 && nyrkubbur[2] <= 0.7) {
                 changeCurrentPos('10');
-              } else if (nyrkubbur[4] == 10) {
-                nyrkubbur[4] = 11;
+              } else if (nyrkubbur[4] == 10 && nyrkubbur[3] <= 0.4) {
                 changeCurrentPos('11');
-              } else if (nyrkubbur[4] == 11) {
-                nyrkubbur[4] = 12;
+              } else if (nyrkubbur[4] == 11 && nyrkubbur[2] >= -0.4) {
                 changeCurrentPos('12');
-              } else if (nyrkubbur[4] == 12) {
-                nyrkubbur[4] = 9;
+              } else if (nyrkubbur[4] == 12 && nyrkubbur[3] >= -0.7) {
                 changeCurrentPos('9');
               }
             }
-
             else if (nyrkubbur[0] == 1) {
                 if (nyrkubbur[4] == 1) {
-                  nyrkubbur[4] = 1;
                   changeCurrentPos('1');
                 } else if (nyrkubbur[4] == 2 && nyrkubbur[2] <= 0.4 && nyrkubbur[2] >= -0.7) {
-                  nyrkubbur[4] = 3;
                   changeCurrentPos('3');
                 } else if (nyrkubbur[4] == 3 && nyrkubbur[3] >= -0.7 && nyrkubbur[3] <= 0.4) {
-                  nyrkubbur[4] = 2;
                   changeCurrentPos('2');
                 }
             }
                 break;
             case 68:	// D - snúa jákvætt Z
             if (nyrkubbur[0] == 0) {
-              if (nyrkubbur[4] == 1) {
-                nyrkubbur[4] = 3;
+              if (nyrkubbur[4] == 1 && nyrkubbur[2] >= -0.4) {
                 changeCurrentPos('3');
-              } else if (nyrkubbur[4] == 2) {
-                nyrkubbur[4] = 12;
+              } else if (nyrkubbur[4] == 2 && nyrkubbur[2] >= -0.4) {
                 changeCurrentPos('12');
               } else if (nyrkubbur[4] == 3) {
-                nyrkubbur[4] = 7;
                 changeCurrentPos('7');
-              } else if (nyrkubbur[4] == 4) {
-                nyrkubbur[4] = 9;
+              } else if (nyrkubbur[4] == 4 && nyrkubbur[2] >= -0.4) {
                 changeCurrentPos('9');
               } else if (nyrkubbur[4] == 5) {
-                nyrkubbur[4] = 1;
                 changeCurrentPos('1');
-              } else if (nyrkubbur[4] == 6) {
-                nyrkubbur[4] = 11;
+              } else if (nyrkubbur[4] == 6 && nyrkubbur[2] <= 0.7) {
                 changeCurrentPos('11');
-              } else if (nyrkubbur[4] == 7) {
-                nyrkubbur[4] = 5;
+              } else if (nyrkubbur[4] == 7 && nyrkubbur[2] <= 0.7) {
                 changeCurrentPos('5');
-              } else if (nyrkubbur[4] == 8) {
-                nyrkubbur[4] = 10;
+              } else if (nyrkubbur[4] == 8 && nyrkubbur[2] <= 0.7) {
                 changeCurrentPos('10');
               } else if (nyrkubbur[4] == 9) {
-                nyrkubbur[4] = 8;
                 changeCurrentPos('8');
               } else if (nyrkubbur[4] == 10) {
-                nyrkubbur[4] = 4;
                 changeCurrentPos('4');
               } else if (nyrkubbur[4] == 11) {
-                nyrkubbur[4] = 2;
                 changeCurrentPos('2');
               } else if (nyrkubbur[4] == 12) {
-                nyrkubbur[4] = 6;
                 changeCurrentPos('6');
               }
             }
-
             else if (nyrkubbur[0] == 1) {
                 if (nyrkubbur[4] == 1 && nyrkubbur[2] <= 0.4 && nyrkubbur[2] >= -0.7) {
-                  nyrkubbur[4] = 3;
                   changeCurrentPos('3');
                 } else if (nyrkubbur[4] == 2) {
-                  nyrkubbur[4] = 2;
                   changeCurrentPos('2');
                 } else if (nyrkubbur[4] == 3) {
-                  nyrkubbur[4] = 1;
                   changeCurrentPos('1');
                 }
             }
@@ -797,53 +735,37 @@ window.onload = function init() {
             case 67:	// C - snúa neikvætt Z
             if (nyrkubbur[0] == 0) {
               if (nyrkubbur[4] == 1) {
-                nyrkubbur[4] = 5;
                 changeCurrentPos('5');
-              } else if (nyrkubbur[4] == 2) {
-                nyrkubbur[4] = 11;
+              } else if (nyrkubbur[4] == 2 && nyrkubbur[2] <= 0.7) {
                 changeCurrentPos('11');
-              } else if (nyrkubbur[4] == 3) {
-                nyrkubbur[4] = 1;
+              } else if (nyrkubbur[4] == 3 && nyrkubbur[2] <= 0.7) {
                 changeCurrentPos('1');
-              } else if (nyrkubbur[4] == 4) {
-                nyrkubbur[4] = 10;
+              } else if (nyrkubbur[4] == 4 && nyrkubbur[2] <= 0.7) {
                 changeCurrentPos('10');
-              } else if (nyrkubbur[4] == 5) {
-                nyrkubbur[4] = 7;
+              } else if (nyrkubbur[4] == 5 && nyrkubbur[2] >= -0.4) {
                 changeCurrentPos('7');
-              } else if (nyrkubbur[4] == 6) {
-                nyrkubbur[4] = 12;
+              } else if (nyrkubbur[4] == 6 && nyrkubbur[2] >= -0.4) {
                 changeCurrentPos('12');
               } else if (nyrkubbur[4] == 7) {
-                nyrkubbur[4] = 3;
                 changeCurrentPos('3');
-              } else if (nyrkubbur[4] == 8) {
-                nyrkubbur[4] = 9;
+              } else if (nyrkubbur[4] == 8 && nyrkubbur[2] >= -0.4) {
                 changeCurrentPos('9');
               } else if (nyrkubbur[4] == 9) {
-                nyrkubbur[4] = 4;
                 changeCurrentPos('4');
               } else if (nyrkubbur[4] == 10) {
-                nyrkubbur[4] = 8;
                 changeCurrentPos('8');
               } else if (nyrkubbur[4] == 11) {
-                nyrkubbur[4] = 6;
                 changeCurrentPos('6');
               } else if (nyrkubbur[4] == 12) {
-                nyrkubbur[4] = 2;
                 changeCurrentPos('2');
               }
             }
-
             else if (nyrkubbur[0] == 1) {
                 if (nyrkubbur[4] == 1 && nyrkubbur[2] <= 0.4 && nyrkubbur[2] >= -0.7) {
-                  nyrkubbur[4] = 3;
                   changeCurrentPos('3');
                 } else if (nyrkubbur[4] == 2) {
-                  nyrkubbur[4] = 2;
                   changeCurrentPos('2');
                 } else if (nyrkubbur[4] == 3) {
-                  nyrkubbur[4] = 1;
                   changeCurrentPos('1');
                 }
             }
@@ -1035,56 +957,89 @@ function changeCurrentPos(x, mv){
       nyrkubbur[2] -= 2/6;
     }
   } else if ( x == '1') {
-    if(nyrkubbur[0] == 0) {
+    if(nyrkubbur[0] == 0 && locations[currentPos[1] - 36] == 0 && locations[currentPos[1] - 6] == 0) {
       currentPos[0] = currentPos[1] - 36;
       currentPos[2] = currentPos[1] - 6;
-    } else if (nyrkubbur[0] == 1) {
+      nyrkubbur[4] = 1;
+    } else if (nyrkubbur[0] == 1 && locations[currentPos[1] - 36] == 0 && locations[currentPos[1] + 36] == 0) {
       currentPos[0] = currentPos[1] - 36;
       currentPos[2] = currentPos[1] + 36;
+      nyrkubbur[4] = 1;
     }
   } else if ( x == '2') {
-    if(nyrkubbur[0] == 0) {
+    if(nyrkubbur[0] == 0 && locations[currentPos[1] - 36] == 0 && locations[currentPos[1] + 1] == 0) {
       currentPos[0] = currentPos[1] - 36;
       currentPos[2] = currentPos[1] + 1;
-    } else if (nyrkubbur[0] == 1) {
+      nyrkubbur[4] = 2;
+    } else if (nyrkubbur[0] == 1 && locations[currentPos[1] - 1] == 0 && locations[currentPos[1] + 1] == 0) {
       currentPos[0] = currentPos[1] - 1;
       currentPos[2] = currentPos[1] + 1;
+      nyrkubbur[4] = 2;
     }
   } else if ( x == '3') {
-    if(nyrkubbur[0] == 0) {
+    if(nyrkubbur[0] == 0 && locations[currentPos[1] - 36] == 0 && locations[currentPos[1] + 6] == 0) {
       currentPos[0] = currentPos[1] - 36;
       currentPos[2] = currentPos[1] + 6;
-    } else if (nyrkubbur[0] == 1) {
+      nyrkubbur[4] = 3;
+    } else if (nyrkubbur[0] == 1 && locations[currentPos[1] - 6] == 0 && locations[currentPos[1] + 6] == 0) {
       currentPos[0] = currentPos[1] - 6;
       currentPos[2] = currentPos[1] + 6;
+      nyrkubbur[4] = 3;
     }
   } else if ( x == '4') {
-    currentPos[0] = currentPos[1] - 36;
-    currentPos[2] = currentPos[1] - 1;
+    if (locations[currentPos[1] - 36] == 0 && locations[currentPos[1] - 1] == 0) {
+      currentPos[0] = currentPos[1] - 36;
+      currentPos[2] = currentPos[1] - 1;
+      nyrkubbur[4] = 4;
+    }
   } else if ( x == '5') {
-    currentPos[0] = currentPos[1] + 36;
-    currentPos[2] = currentPos[1] - 6;
+    if (locations[currentPos[1] + 36] == 0 && locations[currentPos[1] - 6] == 0) {
+      currentPos[0] = currentPos[1] + 36;
+      currentPos[2] = currentPos[1] - 6;
+      nyrkubbur[4] = 5;
+    }
   } else if ( x == '6') {
-    currentPos[0] = currentPos[1] + 36;
-    currentPos[2] = currentPos[1] + 1;
+    if (locations[currentPos[1] + 36] == 0 && locations[currentPos[1] + 1] == 0) {
+      currentPos[0] = currentPos[1] + 36;
+      currentPos[2] = currentPos[1] + 1;
+      nyrkubbur[4] = 6;
+    }
   } else if ( x == '7') {
-    currentPos[0] = currentPos[1] + 36;
-    currentPos[2] = currentPos[1] + 6;
+    if (locations[currentPos[1] + 36] == 0 && locations[currentPos[1] + 6] == 0) {
+      currentPos[0] = currentPos[1] + 36;
+      currentPos[2] = currentPos[1] + 6;
+      nyrkubbur[4] = 7;
+    }
   } else if ( x == '8') {
-    currentPos[0] = currentPos[1] + 36;
-    currentPos[2] = currentPos[1] - 1;
+    if (locations[currentPos[1] + 36] == 0 && locations[currentPos[1] - 1] == 0) {
+      currentPos[0] = currentPos[1] + 36;
+      currentPos[2] = currentPos[1] - 1;
+      nyrkubbur[4] = 8;
+    }
   } else if ( x == '9') {
-    currentPos[0] = currentPos[1] - 1;
-    currentPos[2] = currentPos[1] + 6;
+    if (locations[currentPos[1] - 1] == 0 && locations[currentPos[1] + 6] == 0) {
+      currentPos[0] = currentPos[1] - 1;
+      currentPos[2] = currentPos[1] + 6;
+      nyrkubbur[4] = 9;
+    }
   } else if ( x == '10') {
-    currentPos[0] = currentPos[1] - 1;
-    currentPos[2] = currentPos[1] - 6;
+    if (locations[currentPos[1] - 1] == 0 && locations[currentPos[1] - 6] == 0) {
+      currentPos[0] = currentPos[1] - 1;
+      currentPos[2] = currentPos[1] - 6;
+      nyrkubbur[4] = 10;
+    }
   } else if ( x == '11') {
-    currentPos[0] = currentPos[1] + 1;
-    currentPos[2] = currentPos[1] - 6;
+    if (locations[currentPos[1] + 1] == 0 && locations[currentPos[1] - 6] == 0) {
+      currentPos[0] = currentPos[1] + 1;
+      currentPos[2] = currentPos[1] - 6;
+      nyrkubbur[4] = 11;
+    }
   } else if ( x == '12') {
-    currentPos[0] = currentPos[1] + 1;
-    currentPos[2] = currentPos[1] + 6;
+    if (locations[currentPos[1] + 1] == 0 && locations[currentPos[1] + 6] == 0) {
+      currentPos[0] = currentPos[1] + 1;
+      currentPos[2] = currentPos[1] + 6;
+      nyrkubbur[4] = 12;
+    }
   } else if ( x == 'end') {
     for(i=0; i < 20 * 36; i++){
       locations[i] = 0;
@@ -1144,7 +1099,11 @@ function updateSpeedAndDeleted() {
   var fjoldihaeda = document.querySelector('.fjoldihaeda');
   empty(fjoldihaeda);
   var skilabod = document.createElement('h3');
-  skilabod.textContent = "Þú hefur eytt " + floorsDeleted + " hæðum";
+  if(floorsDeleted == 1) {
+      skilabod.textContent = "Þú hefur eytt " + floorsDeleted + " hæð";
+  } else {
+    skilabod.textContent = "Þú hefur eytt " + floorsDeleted + " hæðum";
+  }
   fjoldihaeda.appendChild(skilabod);
 
   var hradi = document.querySelector('.hradi');
@@ -1519,9 +1478,9 @@ function render(){
     renderSuroundings(mv);
     // Teikna alla eldri kubba
     renderOldByLocation(mv);
-    // Færa kubb niður um einn á visst margra ramma fresti
+    // Færa kubb niður um einn á visst margra ramma fresti (Ef leik er ekki lokið)
     if (waitResponse == false){
-      if(counter % (120 - 10*speed) == 0 ){
+      if(counter % (120 - 10*speed) == 0 ){ // Hraði eykst eftir því sem fleiri hæðum er eytt
         changeCurrentPos('d', mv); // Droppa niður um einn
       }
       // Teikna skuggann á veggjunum sem fylgir
@@ -1558,7 +1517,7 @@ function render(){
 
         gl.bindTexture( gl.TEXTURE_2D, texRed );
         gl.uniformMatrix4fv(mvLoc, false, flatten(mv1));
-        gl.drawArrays( gl.TRIANGLES, 0, numVertices );
+        gl.drawArrays( gl.TRIANGLES, 0, 60 );
       }
       else if (nyrkubbur[0] == 1){
         mv1 = mult( mv, translate( 0.166 + nyrkubbur[2], blueOff - nyrkubbur[1], 0.166 + nyrkubbur[3] ) );
