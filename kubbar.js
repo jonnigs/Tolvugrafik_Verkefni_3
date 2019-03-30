@@ -1052,20 +1052,18 @@ function changeCurrentPos(x, mv){
     currentPos[0] = 0;
     currentPos[0] = 0;
     endGame();
-  } else if ( x == 'start') { // Start staða
-    if (nyrkubbur[0] == 0) { // Rauður
+  } else if ( x == 'start') {      // Start staða
+    if (nyrkubbur[0] == 0) {       // Rauður
       if (locations[16] == 1 || locations[52] == 1 || locations[53] == 1){ // Tékka hvort eitthvað sé fyrir
         endGame();
-
       } else {
         currentPos[0] = 21;
         currentPos[1] = 57;
         currentPos[2] = 51;
       }
-    } else if (nyrkubbur[0] == 1){                 // Blár
+    } else if (nyrkubbur[0] == 1){  // Blár
       if (locations[21] == 1 || locations[57] == 1 || locations[93] == 1){
         endGame();
-
       } else {
         currentPos[0] = 15;
         currentPos[1] = 51;
