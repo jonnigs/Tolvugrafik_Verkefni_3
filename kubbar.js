@@ -31,7 +31,7 @@ var stopDrop = 0;
 var stig = 0;
 var waitResponse = false; // Stöðvar leikinn ef að leik líkur og bíður eftir svari.
 
-var zDist = 7.0;
+var zDist = 8.0;
 
 var counter = 0; // Klukka fyrir hreyfingu niður á við
 
@@ -869,10 +869,15 @@ window.onload = function init() {
                 }
                 break;
             case 71: // G - new game
+              if (waitResponse) {
                 empty(document.querySelector('.leiklokid'));
                 changePoints('start');
                 newCube();
                 waitResponse = false;
+                speed = 1;
+                floorsDeleted = 0;
+                updateSpeedAndDeleted();
+              }
                 break;
          }
      }  );
@@ -893,7 +898,6 @@ window.onload = function init() {
 // Býr til nýjan kubb og sér um að halda utan um kubba sem búið er að spila
 function newCube() {
   var annarhvor = Math.random();
-  //annarhvor = 1;
   if (annarhvor <= 0.5){
     nyrkubbur[0] = 0; // v kubbur (rauður)
   } else {
@@ -1087,9 +1091,6 @@ function endGame() {
   for(i=0; i < 36; i++){
     locations.push(1); // Falskur botn
   }
-  changePoints('end');
-  speed = 1;
-  floorsDeleted = 0;
   waitResponse = true;
 
 }
@@ -1472,7 +1473,7 @@ function render(){
     var mv = lookAt( vec3( 0.0, 0.0, zDist), vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0) );
     mv = mult( mv, rotateX( spinX ) );
     mv = mult( mv, rotateY( 45 + spinY ) );
-    mv = mult( mv, translate( 0.0, 0.0, 0.0) );
+    mv = mult( mv, translate( 0.0, -0.3, 0.0) );
 
     // Teikna leikvöllinn
     renderSuroundings(mv);
