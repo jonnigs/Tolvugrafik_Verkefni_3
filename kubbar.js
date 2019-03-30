@@ -566,7 +566,7 @@ window.onload = function init() {
                 }
               }
               else if (nyrkubbur[0] == 1) {
-                if ( nyrkubbur[4] == 1) {
+                if ( nyrkubbur[4] == 1 && nyrkubbur[3] >= -0.7 && nyrkubbur[3] <= 0.4) {
                   nyrkubbur[4] = 2;
                   changeCurrentPos('2');
                 } else if (nyrkubbur[4] == 2) {
@@ -620,7 +620,7 @@ window.onload = function init() {
               }
 
               else if (nyrkubbur[0] == 1) {
-                if ( nyrkubbur[4] == 1) {
+                if ( nyrkubbur[4] == 1 && nyrkubbur[3] >= -0.7 && nyrkubbur[3] <= 0.4) {
                   nyrkubbur[4] = 2;
                   changeCurrentPos('2');
                 } else if (nyrkubbur[4] == 2) {
@@ -677,10 +677,10 @@ window.onload = function init() {
                   if (nyrkubbur[4] == 1) {
                     nyrkubbur[4] = 1;
                     changeCurrentPos('1');
-                  } else if (nyrkubbur[4] == 2) {
+                  } else if (nyrkubbur[4] == 2 && nyrkubbur[2] <= 0.4 && nyrkubbur[2] >= -0.7) {
                     nyrkubbur[4] = 3;
                     changeCurrentPos('3');
-                  } else if (nyrkubbur[4] == 3) {
+                  } else if (nyrkubbur[4] == 3 && nyrkubbur[3] >= -0.7 && nyrkubbur[3] <= 0.4) {
                     nyrkubbur[4] = 2;
                     changeCurrentPos('2');
                   }
@@ -731,10 +731,10 @@ window.onload = function init() {
                 if (nyrkubbur[4] == 1) {
                   nyrkubbur[4] = 1;
                   changeCurrentPos('1');
-                } else if (nyrkubbur[4] == 2) {
+                } else if (nyrkubbur[4] == 2 && nyrkubbur[2] <= 0.4 && nyrkubbur[2] >= -0.7) {
                   nyrkubbur[4] = 3;
                   changeCurrentPos('3');
-                } else if (nyrkubbur[4] == 3) {
+                } else if (nyrkubbur[4] == 3 && nyrkubbur[3] >= -0.7 && nyrkubbur[3] <= 0.4) {
                   nyrkubbur[4] = 2;
                   changeCurrentPos('2');
                 }
@@ -782,7 +782,7 @@ window.onload = function init() {
             }
 
             else if (nyrkubbur[0] == 1) {
-                if (nyrkubbur[4] == 1) {
+                if (nyrkubbur[4] == 1 && nyrkubbur[2] <= 0.4 && nyrkubbur[2] >= -0.7) {
                   nyrkubbur[4] = 3;
                   changeCurrentPos('3');
                 } else if (nyrkubbur[4] == 2) {
@@ -836,7 +836,7 @@ window.onload = function init() {
             }
 
             else if (nyrkubbur[0] == 1) {
-                if (nyrkubbur[4] == 1) {
+                if (nyrkubbur[4] == 1 && nyrkubbur[2] <= 0.4 && nyrkubbur[2] >= -0.7) {
                   nyrkubbur[4] = 3;
                   changeCurrentPos('3');
                 } else if (nyrkubbur[4] == 2) {
@@ -1133,6 +1133,8 @@ function endGame() {
     locations.push(1); // Falskur botn
   }
   changePoints('end');
+  speed = 1;
+  floorsDeleted = 0;
   waitResponse = true;
 
 }
@@ -1195,7 +1197,7 @@ function checkIfFullFloor(){
       }
       changePoints('h');
       floorsDeleted += 1;
-      if (floorsDeleted % 1 == 0) {
+      if (floorsDeleted % 4 == 0) {
         speed += 1;
         if (speed >= 11) {
           speed = 10;
@@ -1519,7 +1521,7 @@ function render(){
     renderOldByLocation(mv);
     // Færa kubb niður um einn á visst margra ramma fresti
     if (waitResponse == false){
-      if(counter % (130 - 10*speed) == 0 ){
+      if(counter % (120 - 10*speed) == 0 ){
         changeCurrentPos('d', mv); // Droppa niður um einn
       }
       // Teikna skuggann á veggjunum sem fylgir
