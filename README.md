@@ -8,3 +8,5 @@ Leiknum er stjórnað með örvartökkum til að hreyfa fallandi kubb til í pla
 Þegar að öll pláss á heilli hæð hafa verið fyllt, þá eyðist hæðin í burtu. Fyrir hverjar **fjórar** hæðir sem er eytt þá hraðast á leiknum um 1. Leikurin fer hraðast á hraðastig 10.
 
 Leikurinn sýnir skugga af kubbinum sem fellur, heldur utan um stig sem leikmenn vinna sér inn á meðan spilað er, sýnir á hvaða hraða leikurinn er og hversu mörgum hæðum hefur verið eytt út.
+
+Leikinn má spila á [Hér](https://notendur.hi.is/~jgs7/tolvugrafik/Verkefni%203/kubbar.html)
